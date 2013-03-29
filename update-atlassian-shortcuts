@@ -7,6 +7,8 @@
 
 # Variables
 
+#Adding more code
+
 INSTANCE_DIR="/opt/atlassian/instances"
 HOMES_DIR="/opt/atlassian/home"
 MY_LOCAL_DIR="/usr/share/atlassian-shortcuts"
