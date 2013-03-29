@@ -1,0 +1,310 @@
+#!/bin/bash
+# Script wrote by Lucas Timm. [~ltflorao] 
+# Place it at any folder under your $PATH.
+# PS: I strongly suggest you to add it on a ~/.mypath, ~/bin or something like that.
+# DO NOT mix it with the system.
+# It has absolutely *no* guarantee.
+
+# Variables
+
+INSTANCE_DIR="/opt/atlassian/instances"
+HOMES_DIR="/opt/atlassian/home"
+MY_LOCAL_DIR="/usr/share/atlassian-shortcuts"
+MY_APP_VERSIONS=""
+APP_NAME=$1
+REMOVED_INSTANCE=""
+
+# Execution
+
+case $1 in 
+	"")
+	echo ""
+	echo "Usage: $0 'myapp' (jira|conf)"
+	echo ""
+	echo "eg. $0 jira"
+	echo ""
+	echo "(As well it must be the prefix on your instance's path)"
+	echo ""
+	exit 1
+	;;
+
+	jira)
+
+	# create the index
+	# It will be needed to remove a script from an instance that no longer exists
+
+	cd $MY_LOCAL_DIR
+
+	#MY_APP_VERSIONS=$(ls -d echo $BLAH | egrep --color=auto jira[0-9]{3}[0-9]?)
+	MY_APP_VERSIONS=$(find . -mindepth 1 -maxdepth 1 -type d | egrep $APP_NAME[0-9]{3}[0-9])
+	#MY_APP_VERSIONS=$(ls -d $APP_NAME*)
+	echo $MY_APP_VERSIONS > $MY_LOCAL_DIR/.index-jira.txt
+
+	
+	# Read the index with the scripts available.
+	# Then compare on the $INSTANCE_DIR if there is a matching directory.
+	# delete the invalid script if it didn't found anything
+
+	for i in $MY_APP_VERSIONS; do
+		if [ ! -d "$INSTANCE_DIR/$i" ]; then
+			echo "The instance $INSTANCE_DIR/$i from the script $MY_LOCAL_DIR/$i no longer exists."
+			echo "Removing it."
+			rm -f $MY_LOCAL_DIR/$i
+		fi
+
+		
+	done
+
+
+	# Now, detect the instances on the instalation dir to create the script 
+
+	cd $INSTANCE_DIR
+	MY_APP_VERSIONS=$(ls -d $APP_NAME*)
+	cd $MY_LOCAL_DIR
+
+	# writing the scripts 
+
+	for i in $MY_APP_VERSIONS; do
+		touch $i
+		
+		echo "#!/bin/bash" > $i
+		echo "case \$1 in" >> $i
+		echo  "" >> $i
+		echo -e "\t\"stop\")" >> $i
+		echo  "" >> $i
+		echo -e "\tsh $INSTANCE_DIR/$i/bin/shutdown.sh" >> $i
+		echo -e "\t;;" >> $i
+		echo  "" >> $i
+		echo -e "\t\"start\")" >> $i
+		echo -e "\tsh $INSTANCE_DIR/$i/bin/startup.sh" >> $i
+		echo -e "\t;;" >> $i
+		echo  "" >> $i
+		echo -e "\t\"status\")" >> $i
+		echo -e "\tMYPID=\$(ps fauxww | grep java | awk '/$i/ { print \$2 }')" >> $i
+		echo -e "\tcase \$MYPID in" >> $i
+		echo -e "\t\t\"\")" >> $i
+		echo -e "\t\techo \"\"" >> $i
+		echo -e "\t\techo \"$i is not running.\"" >> $i
+		echo -e "\t\techo \"\"" >> $i
+		echo -e "\t\t;;" >> $i
+		echo  "" >> $i
+		echo -e "\t\t*)" >> $i
+		echo -e "\t\techo \"\"" >> $i
+		echo -e "\t\techo \"$i is running, PID is \$MYPID.\"" >> $i
+		echo -e "\t\techo \"\"" >> $i
+		echo  "" >> $i
+		echo -e "\tesac" >> $i
+		echo -e "\t;;" >> $i
+		echo  "" >> $i
+		echo -e "\t\"server\")" >> $i
+		echo -e "\tvi $INSTANCE_DIR/$i/conf/server.xml" >> $i
+		echo -e "\t;;" >> $i
+		echo  "" >> $i
+		echo -e "\t\"logs\")" >> $i
+		echo -e "\ttail -f $HOMES_DIR/$i/log/*" >> $i
+		echo -e "\t;;" >> $i
+		echo  "" >> $i
+		echo -e "\t\"catlogs\")" >> $i
+		echo -e "\ttail -f $INSTANCE_DIR/$i/logs/*" >> $i
+		echo -e "\t;;" >> $i
+		echo  "" >> $i
+		echo -e "\t\"jap\")" >> $i
+		echo -e "\tvi $INSTANCE_DIR/$i/atlassian-jira/WEB-INF/classes/jira-application.properties" >> $i
+		echo -e "\t;;" >> $i
+		echo  "" >> $i
+		echo -e "\t\"jcp\")" >> $i
+		echo -e "\tvi $HOMES_DIR/$i/jira-config.properties" >> $i
+		echo -e "\t;;" >> $i
+		echo  "" >> $i
+		echo -e "\t\"setenv\")" >> $i
+		echo -e "\tvi $INSTANCE_DIR/$i/bin/setenv.sh" >> $i
+		echo -e "\t;;" >> $i
+		echo  "" >> $i
+		echo -e "\t\"dbconfig\")" >> $i
+		echo -e "\tvi $HOMES_DIR/$i/dbconfig.xml" >> $i
+		echo -e "\t;;" >> $i
+		echo  "" >> $i
+		echo -e "\t\"config\")" >> $i
+		echo -e "\tsh $INSTANCE_DIR/$i/bin/config.sh" >> $i
+		echo -e "\t;;" >> $i
+		# Bonus: EE
+		echo  "" >> $i
+		echo -e "\t\"stahp\")" >> $i
+		echo -e "\tMYPID=\$(ps fauxww | grep java | awk '/$i/ { print \$2 }')" >> $i
+		echo -e "\tcase \$MYPID in" >> $i
+		echo -e "\t\t\"\")" >> $i
+		echo -e "\t\techo \"\"" >> $i
+		echo -e "\t\techo \"excuse-me?\"" >> $i
+		echo -e "\t\techo \"\"" >> $i
+		echo -e "\t\t;;" >> $i
+		echo  "" >> $i
+		echo -e "\t\t*)" >> $i
+		echo -e "\t\techo \"\"" >> $i
+		echo -e "\t\techo \"\$0, what are you doing?\"" >> $i
+		echo -e "\t\techo \"\"" >> $i
+		echo -e "\t\techo \"\$0, stahp!\"" >> $i
+		echo -e "\t\tkill -9 \$MYPID" >> $i
+		echo -e "\t\techo \"\"" >> $i
+		echo -e "\t\t;;" >> $i
+		echo -e "\tesac" >> $i
+		echo -e "\t;;" >> $i
+		echo  "" >> $i
+		echo -e "\t*)" >> $i
+		echo -e "\techo \"\"" >> $i
+		echo -e "\techo \"Usage: \$1 (stop|start|status|server|logs|catlogs|jap|jcp|setenv|dbconfig|config). \"" >> $i
+		echo -e "\techo \"\"" >> $i
+		echo -e "\techo \"where:\"" >> $i
+		echo -e "\techo \"jap == jira-application.properties \"" >> $i
+		echo -e "\techo \"jcp == jira-config.properties \"" >> $i
+		echo -e "\techo \"server == server.xml \"" >> $i
+		echo -e "\techo \"setenv == setenv.sh \"" >> $i
+		echo -e "\techo \"dbconfig == dbconfig.xml \"" >> $i
+		echo -e "\techo \"config == config.sh \"" >> $i
+		echo -e "\techo \"\"" >> $i
+		echo "esac" >> $i
+		echo "exit 0" >> $i
+		chmod +x $i
+		echo "Finish creating $i"
+	done
+
+	echo "Done!"
+	exit 0
+	
+	;;
+
+	conf)
+	
+	# create the index
+	# It will be needed to remove an script from an instance that no longer exists
+
+	cd $MY_LOCAL_DIR
+#	MY_APP_VERSIONS=$(ls -d $APP_NAME*)
+	MY_APP_VERSIONS=$(find . -mindepth 1 -maxdepth 1 -type d | egrep $APP_NAME[0-9]{3}[0-9])
+	echo $MY_APP_VERSIONS > $MY_LOCAL_DIR/.index-conf.txt
+
+	
+	# Read the index with the scripts available.
+	# Then compare on the $INSTANCE_DIR if there is a matching direcrtory.
+	# delete the invalid script if it didn't found anything
+
+	for i in $MY_APP_VERSIONS; do
+		if [ ! -d "$INSTANCE_DIR/$i" ]; then
+			echo "The instance $INSTANCE_DIR/$i from the script $MY_LOCAL_DIR/$i no longer exists."
+			echo "Removing it..."
+			rm -f $MY_LOCAL_DIR/$i
+		fi
+
+		
+	done
+
+
+	# Now, detect the instances on the instalation dir to create the script 
+
+	cd $INSTANCE_DIR
+	MY_APP_VERSIONS=$(ls -d $APP_NAME*)
+	cd $MY_LOCAL_DIR
+
+	# writing the scripts 
+	for i in $MY_APP_VERSIONS; do
+		touch $i
+		
+		echo "#!/bin/bash" > $i
+		echo "case \$1 in" >> $i
+		echo  "" >> $i
+		echo -e "\t\"stop\")" >> $i
+		echo  "" >> $i
+		echo -e "\tsh $INSTANCE_DIR/$i/bin/shutdown.sh" >> $i
+		echo -e "\t;;" >> $i
+		echo  "" >> $i
+		echo -e "\t\"start\")" >> $i
+		echo -e "\tsh $INSTANCE_DIR/$i/bin/startup.sh" >> $i
+		echo -e "\t;;" >> $i
+		echo  "" >> $i
+		echo -e "\t\"status\")" >> $i
+		echo -e "\tMYPID=\$(ps fauxww | grep java | awk '/$i/ { print \$2 }')" >> $i
+		echo -e "\tcase \$MYPID in" >> $i
+		echo -e "\t\t\"\")" >> $i
+		echo -e "\t\techo \"\"" >> $i
+		echo -e "\t\techo \"$i is not running.\"" >> $i
+		echo -e "\t\techo \"\"" >> $i
+		echo -e "\t\t;;" >> $i
+		echo  "" >> $i
+		echo -e "\t\t*)" >> $i
+		echo -e "\t\techo \"\"" >> $i
+		echo -e "\t\techo \"$i is running, PID is \$MYPID.\"" >> $i
+		echo -e "\t\techo \"\"" >> $i
+		echo  "" >> $i
+		echo -e "\tesac" >> $i
+		echo -e "\t;;" >> $i
+		echo  "" >> $i
+		echo -e "\t\"server\")" >> $i
+		echo -e "\tvi $INSTANCE_DIR/$i/conf/server.xml" >> $i
+		echo -e "\t;;" >> $i
+		echo  "" >> $i
+		echo -e "\t\"logs\")" >> $i
+		echo -e "\ttail -f $HOMES_DIR/$i/logs/*" >> $i
+		echo -e "\t;;" >> $i
+		echo  "" >> $i
+		echo -e "\t\"catlogs\")" >> $i
+		echo -e "\ttail -f $INSTANCE_DIR/$i/logs/*" >> $i
+		echo -e "\t;;" >> $i
+		echo  "" >> $i
+		echo -e "\t\"cip\")" >> $i
+		echo -e "\tvi $INSTANCE_DIR/$i/confluence/WEB-INF/classes/confluence-init.properties" >> $i
+		echo -e "\t;;" >> $i
+		echo  "" >> $i
+		echo -e "\t\"setenv\")" >> $i
+		echo -e "\tvi $INSTANCE_DIR/$i/bin/setenv.sh" >> $i
+		echo -e "\t;;" >> $i
+		# Bonus: EE
+		echo  "" >> $i
+		echo -e "\t\"stahp\")" >> $i
+		echo -e "\tMYPID=\$(ps fauxww | grep java | awk '/$i/ { print \$2 }')" >> $i
+		echo -e "\tcase \$MYPID in" >> $i
+		echo -e "\t\t\"\")" >> $i
+		echo -e "\t\techo \"\"" >> $i
+		echo -e "\t\techo \"excuse-me?\"" >> $i
+		echo -e "\t\techo \"\"" >> $i
+		echo -e "\t\t;;" >> $i
+		echo  "" >> $i
+		echo -e "\t\t*)" >> $i
+		echo -e "\t\techo \"\"" >> $i
+		echo -e "\t\techo \"\$0, what are you doing?\"" >> $i
+		echo -e "\t\techo \"\"" >> $i
+		echo -e "\t\techo \"\$0, stahp!\"" >> $i
+		echo -e "\t\tkill -9 \$MYPID" >> $i
+		echo -e "\t\techo \"\"" >> $i
+		echo -e "\tesac" >> $i
+		echo -e "\t;;" >> $i
+		echo  "" >> $i
+		echo -e "\t*)" >> $i
+		echo -e "\techo \"\"" >> $i
+		echo -e "\techo \"Usage: \$1 (stop|start|status|server|logs|catlogs|cip|setenv). \"" >> $i
+		echo -e "\techo \"\"" >> $i
+		echo -e "\techo \"where:\"" >> $i
+		echo -e "\techo \"cip == confluence-init.properties \"" >> $i
+		echo -e "\techo \"server == server.xml \"" >> $i
+		echo -e "\techo \"setenv == setenv.sh \"" >> $i
+		echo -e "\techo \"\"" >> $i
+		echo "esac" >> $i
+		echo "exit 0" >> $i
+		chmod +x $i
+		echo "Finish creating $i"
+	done
+
+	;;
+
+	*)
+
+	echo ""
+	echo "Invalid option."
+	echo ""
+	echo "Usage: $0 (jira|conf)"
+	echo ""
+	echo "(As well it must be the prefix on your instance's path)"
+	echo ""
+	exit 1
+	;;
+
+esac
+
