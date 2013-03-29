@@ -11,6 +11,7 @@
 # testing MTP41
 # testing MTP41-2
 # testing MTP42
+# testing MTP43
 
 INSTANCE_DIR="/opt/atlassian/instances"
 HOMES_DIR="/opt/atlassian/home"
