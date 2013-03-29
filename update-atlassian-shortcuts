@@ -8,6 +8,7 @@
 # Variables
 
 #Adding more code
+# testing MTP41
 
 INSTANCE_DIR="/opt/atlassian/instances"
 HOMES_DIR="/opt/atlassian/home"
